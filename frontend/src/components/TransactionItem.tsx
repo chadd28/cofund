@@ -45,11 +45,17 @@ const Amount = styled.Text<{ isExpense: boolean }>`
   color: ${props => props.isExpense ? '#ff6b6b' : '#51cf66'};
 `;
 
-const StatusIndicator = styled.View<{ status: string }>`
+const StatusIndicator = styled.View<{ status: string; isExpense: boolean }>`
   width: 8px;
   height: 8px;
   border-radius: 4px;
   background-color: ${props => {
+    // For expenses, always show red dot
+    if (props.isExpense) {
+      return '#ff6b6b';
+    }
+    
+    // For non-expenses, use status-based colors
     switch (props.status) {
       case 'posted': return '#51cf66';
       case 'pending': return '#ffd43b';
@@ -83,7 +89,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
         </LeftSection>
         <Row>
           <Amount isExpense={isExpense}>{displayAmount}</Amount>
-          <StatusIndicator status={transaction.status} />
+          <StatusIndicator status={transaction.status} isExpense={isExpense} />
         </Row>
       </Row>
     </Container>

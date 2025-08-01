@@ -4,6 +4,7 @@ globs:
 alwaysApply: true
 ---
 # Coding pattern preferences
+-The terminal is running windows powershell
 
 – Always prefer simple solutions  
 -Always use best SWE practices

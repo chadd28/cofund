@@ -6,8 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Background } from '../components/Background';
 import { TransactionItem } from '../components/TransactionItem';
 import { AccountSelector } from '../components/AccountSelector';
-import { getTransactions } from '../api/tellerService';
-import { getAccounts } from '../api/accountService';
+import { getMockTransactions, getMockAccounts } from '../services/mockTransactionService';
 import { Transaction } from '../types/transaction';
 import { Account } from '../types/account';
 
@@ -246,12 +245,12 @@ export const TransactionsScreen: React.FC = () => {
       setAccountsLoading(true);
       setAccountsError(null);
       
-      const response = await getAccounts();
-      setAccounts(response.accounts);
+      const accounts = await getMockAccounts();
+      setAccounts(accounts);
       
       // Auto-select first account if available
-      if (response.accounts.length > 0) {
-        setSelectedAccount(response.accounts[0]);
+      if (accounts.length > 0) {
+        setSelectedAccount(accounts[0]);
       }
     } catch (err) {
       setAccountsError('Failed to load accounts. Please try again.');
@@ -268,7 +267,7 @@ export const TransactionsScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const response = await getTransactions(selectedAccount.id);
+      const response = await getMockTransactions(selectedAccount.id);
       setTransactions(response.transactions);
     } catch (err) {
       setError('Failed to load transactions. Please try again.');

@@ -11,6 +11,7 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { ChatbotScreen } from './src/screens/ChatbotScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { BudgetingScreen } from './src/screens/BudgetingScreen';
+import { AIBudgetCreationScreen } from './src/screens/AIBudgetCreationScreen';
 import { GlassmorphicTabBar } from './src/components/GlassmorphicTabBar';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -27,6 +28,14 @@ const DashboardStack: React.FC = () => (
   </Stack.Navigator>
 );
 
+// Stack navigator for Budgeting and its related screens
+const BudgetingStack: React.FC = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="BudgetingMain" component={BudgetingScreen} />
+    <Stack.Screen name="AIBudgetCreation" component={AIBudgetCreationScreen} />
+  </Stack.Navigator>
+);
+
 const AppTabs: React.FC = () => (
   <Tab.Navigator
     tabBar={(props) => <GlassmorphicTabBar {...props} />}
@@ -35,7 +44,7 @@ const AppTabs: React.FC = () => (
     }}
   >
     <Tab.Screen name="Dashboard" component={DashboardStack} />
-    <Tab.Screen name="Budgeting" component={BudgetingScreen} />
+    <Tab.Screen name="Budgeting" component={BudgetingStack} />
     <Tab.Screen name="Chatbot" component={ChatbotScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>

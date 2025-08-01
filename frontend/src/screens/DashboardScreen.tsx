@@ -11,7 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AccountCarousel } from '../components/AccountCarousel';
 import { Account, DashboardState } from '../types/account';
 import { Background } from '../components/Background';
-import { getAccounts } from '../api/accountService';
+import { getMockAccounts } from '../services/mockAccountService';
 
 // Styled components for glassmorphism dashboard
 const Container = styled.View`
@@ -113,11 +113,11 @@ export const DashboardScreen: React.FC = () => {
     error: null,
   });
 
-  // Load real account data from backend
+  // Load mock account data for demo
   useEffect(() => {
     const loadAccounts = async () => {
       try {
-        const response = await getAccounts();
+        const response = await getMockAccounts();
         
         if (response.success) {
           setState({
