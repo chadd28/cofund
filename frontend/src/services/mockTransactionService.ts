@@ -1,18 +1,18 @@
 import { Transaction, TransactionResponse } from '../types/transaction';
 import { Account } from '../types/account';
 
-// Mock demo accounts with enhanced UI fields
+// Mock demo accounts with enhanced UI fields - Updated to match Bank of America accounts from screenshot
 const mockAccounts: Account[] = [
   {
     id: 'demo-checking-001',
-    name: 'Chase Checking',
+    name: 'My Checking',
     type: 'checking',
-    balance: 2847.32,
-    mask: '***5323',
+    balance: 83367.00,
+    mask: '***8636',
     gradientColors: ['#4A90E2', '#357ABD'] as const,
     currency: 'USD',
-    institution: 'Chase Bank',
-    available_balance: 2847.32,
+    institution: 'Bank of America',
+    available_balance: 83367.00,
     sync_status: 'synced',
     is_active: true,
     last_sync: '2025-07-31T00:00:00Z',
@@ -20,14 +20,14 @@ const mockAccounts: Account[] = [
   },
   {
     id: 'demo-savings-001',
-    name: 'Wells Fargo Savings',
+    name: 'Essential Savings',
     type: 'savings',
-    balance: 12450.00,
-    mask: '***2678',
+    balance: 29921.00,
+    mask: '***7101',
     gradientColors: ['#50C878', '#32CD32'] as const,
     currency: 'USD',
-    institution: 'Wells Fargo',
-    available_balance: 12450.00,
+    institution: 'Bank of America',
+    available_balance: 29921.00,
     sync_status: 'synced',
     is_active: true,
     last_sync: '2025-07-31T00:00:00Z',
@@ -35,14 +35,14 @@ const mockAccounts: Account[] = [
   },
   {
     id: 'demo-credit-001',
-    name: 'Chase Credit Card',
+    name: 'Platinum Card',
     type: 'credit',
-    balance: -1234.56,
-    mask: '***9012',
+    balance: -5000.00,
+    mask: '***3918',
     gradientColors: ['#FF6B6B', '#FF5252'] as const,
     currency: 'USD',
-    institution: 'Chase Bank',
-    available_balance: 8765.44, // Credit limit - balance
+    institution: 'Bank of America',
+    available_balance: 5000.00, // Credit limit - balance
     sync_status: 'synced',
     is_active: true,
     last_sync: '2025-07-31T00:00:00Z',
@@ -199,7 +199,7 @@ const mockTransactions: Transaction[] = [
     teller_category: 'Transfer',
     teller_merchant: 'Internal Transfer',
     user_category: 'Transfer',
-    user_merchant: 'Wells Fargo Savings',
+    user_merchant: 'Bank of America',
     status: 'posted',
     is_verified: true,
     created_at: '2025-07-21T10:00:00Z'

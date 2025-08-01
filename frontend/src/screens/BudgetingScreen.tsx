@@ -7,6 +7,7 @@ import { Background } from '../components/Background';
 import { SpendingOverview } from '../components/SpendingOverview';
 import { CategoryInsights } from '../components/CategoryInsights';
 import { AIInsights } from '../components/AIInsights';
+import { SpendingPieChart } from '../components/SpendingPieChart';
 import { AIBudgetingService, SpendingAnalytics } from '../services/aiBudgetingService';
 import { getMockTransactions } from '../services/mockTransactionService';
 
@@ -261,6 +262,11 @@ export const BudgetingScreen: React.FC = () => {
           }
         >
           <SpendingOverview analytics={analytics} />
+          
+          <SpendingPieChart 
+            categories={analytics.topCategories}
+            totalSpending={analytics.totalSpending}
+          />
           
           <CategoryInsights categories={analytics.topCategories} />
           

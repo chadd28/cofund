@@ -46,7 +46,7 @@ describe('TransactionItem', () => {
     teller_category: 'Transfer',
     teller_merchant: 'Internal Transfer',
     user_category: 'Transfer',
-    user_merchant: 'Wells Fargo Savings',
+    user_merchant: 'Bank of America',
     status: 'posted',
     is_verified: true,
     created_at: '2025-07-21T10:00:00Z'
@@ -85,7 +85,7 @@ describe('TransactionItem', () => {
     expect(getByText('+$500.00')).toBeTruthy();
     
     // Check that the merchant name is displayed
-    expect(getByText('Wells Fargo Savings')).toBeTruthy();
+    expect(getByText('Bank of America')).toBeTruthy();
     
     // Check that the category is displayed
     expect(getByText('Transfer')).toBeTruthy();
