@@ -8,6 +8,7 @@ import { BudgetCreationWizard } from '../components/BudgetCreationWizard';
 import { BudgetSuggestionCard } from '../components/BudgetSuggestionCard';
 import { AIBudgetCreationService, BudgetCreationRequest, AIBudgetSuggestion } from '../services/aiBudgetCreationService';
 import { getMockTransactions } from '../services/mockTransactionService';
+import { useBudget } from '../contexts/BudgetContext';
 
 const Container = styled.View`
   flex: 1;
@@ -142,10 +143,25 @@ const RestartButtonText = styled.Text`
   color: #4A90E2;
 `;
 
+const ContinueButton = styled.TouchableOpacity`
+  padding: 16px 24px;
+  background-color: #51cf66;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+`;
+
+const ContinueButtonText = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+`;
+
 type ScreenState = 'wizard' | 'loading' | 'suggestions' | 'success' | 'error';
 
 export const AIBudgetCreationScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { setBudgetCreated } = useBudget();
   const [screenState, setScreenState] = useState<ScreenState>('wizard');
   const [budgetRequest, setBudgetRequest] = useState<BudgetCreationRequest | null>(null);
   const [suggestions, setSuggestions] = useState<AIBudgetSuggestion[]>([]);
@@ -240,6 +256,13 @@ export const AIBudgetCreationScreen: React.FC = () => {
         Your AI-powered budget "{selectedBudget?.template.name}" has been created. 
         You can now track your spending against these personalized categories and goals.
       </SuccessText>
+      
+      <ContinueButton onPress={() => {
+        setBudgetCreated(true);
+        navigation.navigate('BudgetingMain' as never);
+      }}>
+        <ContinueButtonText>Continue to Budgeting</ContinueButtonText>
+      </ContinueButton>
       
       <RestartButton onPress={handleBackToWizard}>
         <RestartButtonText>Create Another Budget</RestartButtonText>

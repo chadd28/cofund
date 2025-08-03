@@ -46,6 +46,27 @@ const CategoryAmount = styled.Text`
   color: #ff6b6b;
 `;
 
+const BudgetProgress = styled.View`
+  align-items: flex-end;
+`;
+
+const BudgetText = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+`;
+
+const BudgetLabel = styled.Text`
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+`;
+
+const RemainingText = styled.Text<{ isOverBudget: boolean }>`
+  font-size: 12px;
+  color: ${props => props.isOverBudget ? '#ff6b6b' : '#51cf66'};
+  font-weight: 600;
+`;
+
 const CategoryDetails = styled.View`
   flex-direction: row;
   justify-content: space-between;
@@ -107,9 +128,9 @@ const ProgressBar = styled.View`
   margin-bottom: 8px;
 `;
 
-const ProgressFill = styled.View<{ percentage: number }>`
+const ProgressFill = styled.View<{ percentage: number; isOverBudget: boolean }>`
   height: 4px;
-  background-color: #4A90E2;
+  background-color: ${props => props.isOverBudget ? '#ff6b6b' : '#4A90E2'};
   border-radius: 2px;
   width: ${props => Math.min(props.percentage, 100)}%;
 `;
@@ -141,35 +162,41 @@ export const CategoryInsights: React.FC<CategoryInsightsProps> = ({ categories }
 
   return (
     <Container>
-      <Title>Spending by Category</Title>
+      <Title>Category Insights</Title>
       
       {categories.map((category, index) => (
         <CategoryItem key={index}>
           <CategoryHeader>
             <CategoryName>{category.category}</CategoryName>
-            <CategoryAmount>{formatCurrency(category.total)}</CategoryAmount>
+            <BudgetProgress>
+              <BudgetText>{formatCurrency(category.total)} / {formatCurrency(category.budget || 0)}</BudgetText>
+              <BudgetLabel>spent / budget</BudgetLabel>
+                             {category.remaining !== undefined && (
+                 <RemainingText isOverBudget={category.remaining < 0}>
+                   {category.remaining >= 0 ? `$${category.remaining.toFixed(0)} left` : `$${Math.abs(category.remaining).toFixed(0)} over`}
+                 </RemainingText>
+               )}
+            </BudgetProgress>
           </CategoryHeader>
           
           <ProgressBar>
-            <ProgressFill percentage={category.percentage} />
+            <ProgressFill 
+              percentage={category.budgetPercentage || category.percentage} 
+              isOverBudget={(category.budgetPercentage || 0) > 100}
+            />
           </ProgressBar>
           
-          <CategoryDetails>
-            <DetailItem>
-              <DetailValue>{category.percentage.toFixed(1)}%</DetailValue>
-              <DetailLabel>of total</DetailLabel>
-            </DetailItem>
-            
-            <DetailItem>
-              <DetailValue>{category.transactionCount}</DetailValue>
-              <DetailLabel>transactions</DetailLabel>
-            </DetailItem>
-            
-            <DetailItem>
-              <DetailValue>{formatCurrency(category.averageAmount)}</DetailValue>
-              <DetailLabel>average</DetailLabel>
-            </DetailItem>
-          </CategoryDetails>
+                     <CategoryDetails>
+             <DetailItem>
+               <DetailValue>{(category.budgetPercentage || 0).toFixed(1)}%</DetailValue>
+               <DetailLabel>of budget</DetailLabel>
+             </DetailItem>
+             
+             <DetailItem>
+               <DetailValue>{category.transactionCount}</DetailValue>
+               <DetailLabel>transactions</DetailLabel>
+             </DetailItem>
+           </CategoryDetails>
           
           <TrendContainer>
             <TrendIcon 
@@ -177,9 +204,12 @@ export const CategoryInsights: React.FC<CategoryInsightsProps> = ({ categories }
               size={16} 
               trend={category.trend} 
             />
-            <TrendText trend={category.trend}>
-              {category.trend} trend
-            </TrendText>
+                         <TrendText trend={category.trend}>
+               {category.trend === 'increasing' ? 
+                (category.budgetPercentage && category.budgetPercentage >= 100 ? 'Over budget' : 'High budget usage') : 
+                category.trend === 'decreasing' ? 'Low budget usage' : 
+                'Moderate budget usage'}
+             </TrendText>
           </TrendContainer>
           
           {category.recommendation && (

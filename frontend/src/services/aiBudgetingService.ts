@@ -8,6 +8,9 @@ export interface SpendingCategory {
   averageAmount: number;
   trend: 'increasing' | 'decreasing' | 'stable';
   recommendation?: string;
+  budget?: number; // Monthly budget for this category
+  remaining?: number; // Remaining budget
+  budgetPercentage?: number; // Percentage of budget used
 }
 
 export interface BudgetInsight {
@@ -76,22 +79,32 @@ export class AIBudgetingService {
       }
     });
     
-    // Generate top categories
-    const topCategories: SpendingCategory[] = Array.from(categoryMap.entries())
-      .map(([category, data]) => ({
-        category,
-        total: data.total,
-        percentage: (data.total / totalSpending) * 100,
-        transactionCount: data.count,
-        averageAmount: data.total / data.count,
-        trend: this.analyzeTrend(data.amounts),
-        recommendation: this.generateCategoryRecommendation(category, data.total, data.count)
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8);
+    // Generate top categories with budget information
+    const allCategories = Array.from(categoryMap.entries())
+      .map(([category, data]) => {
+        const budget = this.calculateRecommendedBudget(category, data.total, totalIncome);
+        const remaining = Math.max(0, budget - data.total);
+        const budgetPercentage = budget > 0 ? (data.total / budget) * 100 : 0;
+        
+        return {
+          category,
+          total: data.total,
+          percentage: (data.total / totalSpending) * 100,
+          transactionCount: data.count,
+          averageAmount: data.total / data.count,
+          trend: this.analyzeTrend(data.amounts, budget),
+          recommendation: this.generateCategoryRecommendation(category, data.total, data.count, budget, remaining),
+          budget,
+          remaining,
+          budgetPercentage
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+    
+    const topCategories: SpendingCategory[] = allCategories.slice(0, 12); // Show more categories for better overview
     
     // Generate insights
-    const insights = this.generateInsights(expenses, totalSpending, totalIncome, savingsRate);
+    const insights = this.generateInsights(expenses, totalSpending, totalIncome, savingsRate, topCategories);
     
     // Generate budget recommendations
     const recommendations = this.generateBudgetRecommendations(topCategories, totalIncome);
@@ -112,45 +125,138 @@ export class AIBudgetingService {
   }
   
   /**
-   * Analyze spending trend for a category
+   * Analyze budget usage trend for a category based on current budget status
    */
-  private static analyzeTrend(amounts: number[]): 'increasing' | 'decreasing' | 'stable' {
-    if (amounts.length < 2) return 'stable';
+  private static analyzeTrend(amounts: number[], budget: number): 'increasing' | 'decreasing' | 'stable' {
+    if (amounts.length < 3) return 'stable';
     
-    const recent = amounts.slice(-3);
-    const older = amounts.slice(0, -3);
+    // Calculate total spending and budget percentage
+    const totalSpending = amounts.reduce((a, b) => a + b, 0);
+    const budgetPercentage = (totalSpending / budget) * 100;
     
-    if (older.length === 0) return 'stable';
-    
-    const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-    const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
-    
-    const change = ((recentAvg - olderAvg) / olderAvg) * 100;
-    
-    if (change > 10) return 'increasing';
-    if (change < -10) return 'decreasing';
-    return 'stable';
+    // Determine trend based on current budget usage
+    if (budgetPercentage >= 100) {
+      // Over budget - this is "increasing" (using budget aggressively)
+      return 'increasing';
+    } else if (budgetPercentage >= 80) {
+      // Near budget limit - this is "increasing" (approaching limit)
+      return 'increasing';
+    } else if (budgetPercentage <= 30) {
+      // Well under budget - this is "decreasing" (using budget conservatively)
+      return 'decreasing';
+    } else {
+      // Moderate usage - this is "stable"
+      return 'stable';
+    }
   }
   
   /**
    * Generate category-specific recommendations
    */
-  private static generateCategoryRecommendation(category: string, total: number, count: number): string {
+  private static generateCategoryRecommendation(category: string, total: number, count: number, budget?: number, remaining?: number): string {
     const average = total / count;
+    const isOverBudget = budget && remaining && remaining < 0;
+    const budgetPercentage = budget ? (total / budget) * 100 : 0;
     
     switch (category.toLowerCase()) {
-      case 'groceries':
-        return average > 100 ? 'Consider meal planning to reduce grocery costs' : 'Great job keeping grocery costs low!';
-      case 'dining out':
-        return average > 50 ? 'Try cooking at home more often to save money' : 'Good balance of dining out and home cooking';
-      case 'entertainment':
-        return average > 100 ? 'Look for free or low-cost entertainment options' : 'Reasonable entertainment spending';
+      case 'food & dining':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your food budget. Try meal prepping to reduce costs.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your food budget. Consider reducing dining out.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of food budget used.`;
+        }
+        
       case 'transportation':
-        return average > 200 ? 'Consider carpooling or public transportation' : 'Efficient transportation spending';
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your transport budget. Consider carpooling or public transit.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your transport budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of transport budget used.`;
+        }
+      
+      case 'shopping':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your shopping budget. Set monthly limits.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your shopping budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of shopping budget used.`;
+        }
+      
+      case 'entertainment':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your entertainment budget. Look for free alternatives.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your entertainment budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of entertainment budget used.`;
+        }
+      
       case 'utilities':
-        return average > 150 ? 'Check for energy-saving opportunities' : 'Good utility management';
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your utilities budget. Consider energy-saving measures.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your utilities budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of utilities budget used.`;
+        }
+      
+      case 'health & fitness':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your health budget. Review necessary expenses.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your health budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of health budget used.`;
+        }
+      
+      case 'travel':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your travel budget. Consider budget travel options.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your travel budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of travel budget used.`;
+        }
+      
+      case 'home & garden':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your home budget. Prioritize essential purchases.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your home budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of home budget used.`;
+        }
+      
+      case 'personal care':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your personal care budget. Look for cost-effective alternatives.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your personal care budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of personal care budget used.`;
+        }
+      
+      case 'education':
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your education budget. Explore payment plans.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your education budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of education budget used.`;
+        }
+      
       default:
-        return count > 10 ? 'High transaction frequency - consider consolidating' : 'Manageable spending pattern';
+        if (isOverBudget) {
+          return `You're $${Math.abs(remaining!)} over your ${category.toLowerCase()} budget.`;
+        } else if (budgetPercentage > 80) {
+          return `You've used ${budgetPercentage.toFixed(0)}% of your ${category.toLowerCase()} budget.`;
+        } else {
+          return `You're on track with ${budgetPercentage.toFixed(0)}% of ${category.toLowerCase()} budget used.`;
+        }
     }
   }
   
@@ -161,7 +267,8 @@ export class AIBudgetingService {
     expenses: Transaction[], 
     totalSpending: number, 
     totalIncome: number, 
-    savingsRate: number
+    savingsRate: number,
+    topCategories: SpendingCategory[]
   ): BudgetInsight[] {
     const insights: BudgetInsight[] = [];
     
@@ -204,14 +311,26 @@ export class AIBudgetingService {
       }
     });
     
-    // Frequent small purchases
-    const smallTransactions = expenses.filter(tx => Math.abs(tx.amount) < 20);
-    if (smallTransactions.length > expenses.length * 0.6) {
+    // Frequent small purchases (more realistic threshold)
+    const smallTransactions = expenses.filter(tx => Math.abs(tx.amount) < 30);
+    if (smallTransactions.length > expenses.length * 0.4) {
       insights.push({
         type: 'spending_pattern',
         title: 'Many Small Purchases',
-        description: 'You have many small transactions. These can add up quickly - consider tracking them more closely.',
+        description: 'You have many small transactions under $30. These can add up quickly - consider tracking them more closely.',
         severity: 'medium'
+      });
+    }
+    
+    // High frequency categories
+    const highFrequencyCategories = topCategories.filter(cat => cat.transactionCount > 10);
+    if (highFrequencyCategories.length > 0) {
+      const topFrequent = highFrequencyCategories[0];
+      insights.push({
+        type: 'spending_pattern',
+        title: 'High Transaction Frequency',
+        description: `${topFrequent.category} has ${topFrequent.transactionCount} transactions. Consider consolidating purchases to reduce fees.`,
+        severity: 'low'
       });
     }
     
@@ -248,21 +367,25 @@ export class AIBudgetingService {
   }
   
   /**
-   * Calculate recommended budget for a category
+   * Calculate recommended budget for a category based on realistic spending patterns
    */
   private static calculateRecommendedBudget(category: string, currentSpending: number, totalIncome: number): number {
     const categoryBudgets: { [key: string]: number } = {
-      'groceries': 0.12,
-      'dining out': 0.08,
-      'entertainment': 0.05,
-      'transportation': 0.15,
-      'utilities': 0.08,
-      'healthcare': 0.10,
-      'shopping': 0.08,
-      'personal care': 0.03
+      'food & dining': 0.15,      // 15% - Most frequent category
+      'transportation': 0.12,      // 12% - Regular commuting
+      'shopping': 0.10,           // 10% - Regular retail
+      'utilities': 0.08,          // 8% - Monthly bills
+      'health & fitness': 0.06,   // 6% - Healthcare and fitness
+      'entertainment': 0.05,      // 5% - Leisure activities
+      'personal care': 0.04,      // 4% - Grooming and beauty
+      'education': 0.03,          // 3% - Learning expenses
+      'travel': 0.08,             // 8% - Occasional trips
+      'home & garden': 0.04,      // 4% - Maintenance
+      'business services': 0.02,  // 2% - Work-related
+      'income': 0.00              // 0% - Income shouldn't have budget
     };
     
-    const defaultPercentage = 0.05; // 5% for uncategorized
+    const defaultPercentage = 0.03; // 3% for uncategorized
     const percentage = categoryBudgets[category.toLowerCase()] || defaultPercentage;
     
     return totalIncome * percentage;
@@ -281,13 +404,13 @@ export class AIBudgetingService {
   }
   
   /**
-   * Generate monthly trend data (mock for demo)
+   * Generate monthly trend data based on realistic spending patterns
    */
   private static generateMonthlyTrend() {
     return [
-      { month: 'May 2025', spending: 3200, income: 5000 },
-      { month: 'June 2025', spending: 2800, income: 5000 },
-      { month: 'July 2025', spending: 3100, income: 5000 }
+      { month: 'Dec 2024', spending: 4850, income: 4870 },
+      { month: 'Jan 2025', spending: 4120, income: 4870 },
+      { month: 'Feb 2025', spending: 3980, income: 4870 }
     ];
   }
 } 

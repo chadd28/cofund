@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AccountCarousel } from '../components/AccountCarousel';
 import { Account, DashboardState } from '../types/account';
 import { Background } from '../components/Background';
 import { getMockAccounts } from '../services/mockAccountService';
+import { useAuth } from '../contexts/AuthContext';
 
 // Styled components for glassmorphism dashboard
 const Container = styled.View`
@@ -95,9 +97,45 @@ const TransactionsButtonText = styled.Text`
   font-weight: 600;
 `;
 
+const AddAccountButton = styled(TouchableOpacity)`
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background-color: rgba(74, 144, 226, 0.2);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  align-items: center;
+  flex-direction: row;
+  justify-content: center;
+`;
+
+const AddAccountButtonText = styled.Text`
+  color: #4A90E2;
+  font-size: 16px;
+  font-weight: 600;
+  margin-left: 8px;
+`;
+
+const LogoutButton = styled(TouchableOpacity)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+`;
+
+const HeaderContainer = styled.View`
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 30px;
+`;
+
 type DashboardStackParamList = {
   DashboardMain: undefined;
   Transactions: undefined;
+  TellerConnect: undefined;
 };
 
 type DashboardScreenNavigationProp = NativeStackNavigationProp<
@@ -107,6 +145,7 @@ type DashboardScreenNavigationProp = NativeStackNavigationProp<
 
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
+  const { signOut } = useAuth();
   const [state, setState] = useState<DashboardState>({
     accounts: [],
     isLoading: true,
@@ -144,6 +183,8 @@ export const DashboardScreen: React.FC = () => {
     loadAccounts();
   }, []);
 
+
+
   if (state.isLoading) {
     return (
       <Background>
@@ -168,16 +209,36 @@ export const DashboardScreen: React.FC = () => {
     navigation.navigate('Transactions');
   };
 
+  const handleAddAccount = () => {
+    navigation.navigate('TellerConnect');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
   return (
     <Background>
       <ScrollContainer showsVerticalScrollIndicator={false}>
-        <Header>
+        <HeaderContainer>
           <HeaderTitle>Dashboard</HeaderTitle>
-        </Header>
+          <LogoutButton onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color="#ffffff" />
+          </LogoutButton>
+        </HeaderContainer>
 
         <SectionTitle>Your Accounts</SectionTitle>
         
         <AccountCarousel accounts={state.accounts} />
+        
+        <AddAccountButton onPress={handleAddAccount}>
+          <Ionicons name="add-circle" size={20} color="#4A90E2" />
+          <AddAccountButtonText>Add Another Account</AddAccountButtonText>
+        </AddAccountButton>
         
         <TransactionsButton onPress={handleTransactionsPress}>
           <TransactionsButtonText>View Recent Transactions →</TransactionsButtonText>

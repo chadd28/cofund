@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.1.13:3789',
+  BASE_URL: 'http://192.168.0.248:3789',
   AUTH_ENDPOINT: '/api/auth',
   TELLER_ENDPOINT: '/api/teller',
   CHAT_ENDPOINT: '/api/chat',

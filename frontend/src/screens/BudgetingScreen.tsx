@@ -8,8 +8,10 @@ import { SpendingOverview } from '../components/SpendingOverview';
 import { CategoryInsights } from '../components/CategoryInsights';
 import { AIInsights } from '../components/AIInsights';
 import { SpendingPieChart } from '../components/SpendingPieChart';
+import { BudgetTrackingChart } from '../components/BudgetTrackingChart';
 import { AIBudgetingService, SpendingAnalytics } from '../services/aiBudgetingService';
-import { getMockTransactions } from '../services/mockTransactionService';
+import { BudgetService } from '../services/budgetService';
+import { useBudget } from '../contexts/BudgetContext';
 
 const Container = styled.View`
   flex: 1;
@@ -143,6 +145,7 @@ const CreateBudgetPromptText = styled.Text`
 
 export const BudgetingScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { budgetCreated, setBudgetCreated } = useBudget();
   const [analytics, setAnalytics] = useState<SpendingAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -152,17 +155,16 @@ export const BudgetingScreen: React.FC = () => {
     try {
       setError(null);
       
-      // Get transactions from mock service
-      const response = await getMockTransactions('demo-checking-001');
+      // Get budget data from BudgetService (which uses realistic mock data)
+      const budgetData = await BudgetService.getBudgetData();
       
-      if (!response.success || !response.transactions) {
-        throw new Error('Failed to load transaction data');
+      if (budgetData.error) {
+        throw new Error(budgetData.error);
       }
 
-      // Analyze spending with AI
-      const spendingAnalytics = AIBudgetingService.analyzeSpending(response.transactions);
-      setAnalytics(spendingAnalytics);
+      setAnalytics(budgetData.analytics);
     } catch (err) {
+      console.error('Error loading budget data:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while loading budget data');
     } finally {
       setLoading(false);
@@ -171,7 +173,8 @@ export const BudgetingScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadBudgetData();
+    setBudgetCreated(false);
+    setAnalytics(null);
     setRefreshing(false);
   };
 
@@ -180,8 +183,15 @@ export const BudgetingScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    loadBudgetData();
-  }, []);
+    // Only load data if budget has been created
+    if (budgetCreated) {
+      loadBudgetData();
+    } else {
+      setLoading(false);
+    }
+  }, [budgetCreated]);
+
+
 
   if (loading) {
     return (
@@ -212,20 +222,36 @@ export const BudgetingScreen: React.FC = () => {
     );
   }
 
-  if (!analytics) {
+  if (!budgetCreated) {
     return (
       <Background>
         <Container>
+          <Header>
+            <HeaderTitle>AI Budgeting</HeaderTitle>
+          </Header>
           <EmptyStateContainer>
             <EmptyStateIcon name="analytics-outline" size={64} />
-            <EmptyStateTitle>No Spending Data</EmptyStateTitle>
+            <EmptyStateTitle>Create Your Budget</EmptyStateTitle>
             <EmptyStateText>
-              Connect your accounts to start getting AI-powered budgeting insights and recommendations.
+              Start by creating an AI-powered budget to get personalized insights and recommendations based on your spending patterns.
             </EmptyStateText>
             <CreateBudgetPromptButton onPress={handleCreateBudget}>
               <CreateBudgetPromptText>Create AI Budget</CreateBudgetPromptText>
             </CreateBudgetPromptButton>
           </EmptyStateContainer>
+        </Container>
+      </Background>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <Background>
+        <Container>
+          <LoadingContainer>
+            <Ionicons name="analytics" size={48} color="rgba(255, 255, 255, 0.5)" />
+            <LoadingText>Creating your AI budget...</LoadingText>
+          </LoadingContainer>
         </Container>
       </Background>
     );
@@ -237,10 +263,6 @@ export const BudgetingScreen: React.FC = () => {
         <Header>
           <HeaderTitle>AI Budgeting</HeaderTitle>
           <HeaderActions>
-            <CreateBudgetButton onPress={handleCreateBudget}>
-              <Ionicons name="add-circle" size={16} color="#4A90E2" />
-              <CreateBudgetText>Create Budget</CreateBudgetText>
-            </CreateBudgetButton>
             <RefreshButton onPress={handleRefresh}>
               <Ionicons 
                 name="refresh" 
@@ -262,6 +284,12 @@ export const BudgetingScreen: React.FC = () => {
           }
         >
           <SpendingOverview analytics={analytics} />
+          
+          <BudgetTrackingChart
+            categories={analytics.topCategories}
+            recommendations={analytics.recommendations}
+            totalSpending={analytics.totalSpending}
+          />
           
           <SpendingPieChart 
             categories={analytics.topCategories}

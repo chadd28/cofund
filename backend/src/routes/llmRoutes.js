@@ -28,4 +28,20 @@ router.get('/test', async (req, res) => {
   }
 });
 
+// GET /api/llm/test-financial - test financial data awareness
+router.get('/test-financial', async (req, res) => {
+  const financialPrompt = "What are my recent transactions and how much did I spend on food this month?";
+
+  try {
+    const reply = await callGroq(financialPrompt);
+    res.json({ 
+      prompt: financialPrompt,
+      reply,
+      note: "This tests if the chatbot can access and reference the mock financial data"
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

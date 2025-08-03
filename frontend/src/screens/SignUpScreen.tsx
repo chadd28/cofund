@@ -16,7 +16,7 @@ import { AuthButton } from '../components/AuthButton';
 import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { signUpWithEmail } from '../api/authService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthWithBudget } from '../hooks/useAuthWithBudget';
 import {
   validateEmail,
   validatePassword,
@@ -89,7 +89,7 @@ const ErrorText = styled.Text`
 
 export const SignUpScreen: React.FC = () => {
   const navigation = useNavigation<SignUpScreenNavigationProp>();
-  const { signIn } = useAuth();
+  const { signInWithBudgetReset } = useAuthWithBudget();
   
   // Form state management
   const [firstName, setFirstName] = useState('');
@@ -204,7 +204,7 @@ export const SignUpScreen: React.FC = () => {
         // signIn function as a callback to be executed upon success or skip.
         navigation.navigate('TellerConnect', {
           onSuccess: async () => {
-            await signIn(user);
+            await signInWithBudgetReset(user);
           },
         });
       }

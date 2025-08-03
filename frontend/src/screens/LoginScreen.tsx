@@ -14,7 +14,7 @@ import { AuthButton } from '../components/AuthButton';
 import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { signInWithEmail } from '../api/authService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthWithBudget } from '../hooks/useAuthWithBudget';
 
 const Container = styled.View`
   flex: 1;
@@ -106,7 +106,7 @@ const validateInput = (credentials: Omit<LoginState, 'isLoading' | 'error'>): st
 
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { signIn } = useAuth();
+  const { signInWithBudgetReset } = useAuthWithBudget();
   
   const [state, setState] = useState<LoginState>({
     email: '',
@@ -137,12 +137,12 @@ export const LoginScreen: React.FC = () => {
       }
 
       if (user) {
-        await signIn(user);
+        await signInWithBudgetReset(user);
       }
     } catch (err) {
       setState(prevState => ({ ...prevState, error: 'An unexpected error occurred. Please try again.', isLoading: false }));
     }
-  }, [state, signIn]);
+  }, [state, signInWithBudgetReset]);
 
   const handleForgotPassword = useCallback(() => {
     Alert.alert(
